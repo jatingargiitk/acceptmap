@@ -91,6 +91,22 @@ class MapperTest(unittest.TestCase):
         self.assertEqual((tagged.via, tagged.symbol, tagged.line),
                          ("tag", "wraps awkward fields in quotes", 7))
 
+    def test_snake_case_tag_in_test_name(self):
+        ms = by_id(run("""
+            ## Acceptance criteria
+            - AC-1: Something nobody wrote words for
+            - AC-2: Another one
+        """, """\
+            --- a/tests/test_misc.py
+            +++ b/tests/test_misc.py
+            @@ -0,0 +1,2 @@
+            +def test_ac2_regression():
+            +    assert run() == 0
+        """))
+        self.assertEqual(ms["AC-1"].status, UNMAPPED)
+        self.assertEqual(ms["AC-2"].status, TEST_ONLY)
+        self.assertEqual(ms["AC-2"].tests[0].via, "tag")
+
     def test_import_lines_are_not_evidence(self):
         ms = run("""
             ## Acceptance criteria
