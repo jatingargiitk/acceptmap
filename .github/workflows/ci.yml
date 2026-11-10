@@ -1,0 +1,49 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install .
+      - run: python -m unittest discover -s tests -v
+      - name: Example report is reproducible
+        run: |
+          acceptmap examples/issue-118.md --diff examples/pr-118.diff > examples/report.md
+          acceptmap examples/issue-118.md --diff examples/pr-118.diff --format json > examples/report.json
+          git diff --exit-code examples/
+      - name: --fail-on exits 1 on the example
+        run: |
+          set +e
+          acceptmap examples/issue-118.md --diff examples/pr-118.diff --fail-on untested > /dev/null
+          test $? -eq 1
+
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Action with a diff file
+        id: example
+        uses: ./
+        with:
+          spec: examples/issue-118.md
+          diff: examples/pr-118.diff
+      - run: grep -F "**3/5 mapped to code and tests**" "${{ steps.example.outputs.report }}"
+      - name: Action with a git range
+        uses: ./
+        with:
+          spec: examples/issue-118.md
+          base: HEAD~1
+      - name: Action on this pull request's description
+        if: github.event_name == 'pull_request'
+        uses: ./

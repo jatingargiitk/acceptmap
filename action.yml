@@ -1,0 +1,81 @@
+name: acceptmap
+description: Map acceptance criteria in a PR description or spec file to the code and tests the PR changes, and write the report to the job summary.
+branding:
+  icon: check-square
+  color: green
+inputs:
+  spec:
+    description: Markdown file with the acceptance criteria. Empty = use the pull request description.
+    required: false
+    default: ""
+  diff:
+    description: Unified diff file to read. Empty = run "git diff BASE...HEAD" (needs actions/checkout with fetch-depth 0).
+    required: false
+    default: ""
+  base:
+    description: Base ref or SHA for the git diff. Empty = the pull request base SHA.
+    required: false
+    default: ""
+  fail-on:
+    description: 'Fail the step when criteria are "unmapped" or "untested" (unmapped or code only). Empty = never fail.'
+    required: false
+    default: ""
+  args:
+    description: Extra acceptmap arguments, e.g. "--min-terms 3 --test-glob qa/*".
+    required: false
+    default: ""
+outputs:
+  report:
+    description: Path of the Markdown report.
+    value: ${{ steps.run.outputs.report }}
+  json:
+    description: Path of the JSON report.
+    value: ${{ steps.run.outputs.json }}
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        INPUT_SPEC: ${{ inputs.spec }}
+        INPUT_DIFF: ${{ inputs.diff }}
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_ARGS: ${{ inputs.args }}
+        PR_BODY: ${{ github.event.pull_request.body }}
+        PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      run: |
+        set -euo pipefail
+        spec="$INPUT_SPEC"
+        if [ -z "$spec" ]; then
+          spec="$RUNNER_TEMP/acceptmap-pr-body.md"
+          printf '%s\n' "$PR_BODY" > "$spec"
+        fi
+        args=()
+        if [ -n "$INPUT_DIFF" ]; then
+          args+=(--diff "$INPUT_DIFF")
+        else
+          base="${INPUT_BASE:-$PR_BASE_SHA}"
+          if [ -z "$base" ]; then
+            echo "::error::acceptmap: set 'diff' or 'base' (no pull request base SHA on this event)"
+            exit 2
+          fi
+          args+=(--git "$base...HEAD")
+        fi
+        if [ -n "$INPUT_FAIL_ON" ]; then
+          args+=(--fail-on "$INPUT_FAIL_ON")
+        fi
+        # shellcheck disable=SC2206
+        extra=($INPUT_ARGS)
+        report="$RUNNER_TEMP/acceptmap-report.md"
+        json="$RUNNER_TEMP/acceptmap-report.json"
+        set +e
+        PYTHONPATH="$GITHUB_ACTION_PATH" python3 -m acceptmap "$spec" "${args[@]}" ${extra[@]+"${extra[@]}"} -o "$report" --json "$json"
+        code=$?
+        set -e
+        if [ -f "$report" ]; then
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "report=$report" >> "$GITHUB_OUTPUT"
+        echo "json=$json" >> "$GITHUB_OUTPUT"
+        exit $code
