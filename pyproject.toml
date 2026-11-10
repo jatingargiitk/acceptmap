@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acceptmap"
+version = "0.1.0"
+description = "Map acceptance criteria in an issue or spec to the exact code and tests a PR changes; unmatched criteria stay visibly unmapped."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Jatin Garg"}]
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+acceptmap = "acceptmap.cli:main"
+
+[tool.setuptools]
+packages = ["acceptmap"]
