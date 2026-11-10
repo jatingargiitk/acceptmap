@@ -107,6 +107,33 @@ class MapperTest(unittest.TestCase):
         self.assertEqual(ms["AC-2"].status, TEST_ONLY)
         self.assertEqual(ms["AC-2"].tests[0].via, "tag")
 
+    def test_file_path_terms_help_next_to_a_real_match(self):
+        diff = """\
+            --- a/README.md
+            +++ b/README.md
+            @@ -1 +1 @@
+            -See the docs.
+            +See the workflow file in examples.
+            --- a/notes/other.md
+            +++ b/notes/other.md
+            @@ -0,0 +1 @@
+            +unrelated text
+        """
+        ms = run("## Acceptance criteria\n- The README links to the workflow file\n", diff)
+        self.assertEqual(ms[0].code[0].matched, ["workflow", "fil", "readm"])
+        self.assertEqual(ms[0].code[0].line, 1)
+        self.assertEqual(ms[0].code[0].kind, "added")
+        # A path match alone is not evidence.
+        ms = run("## Acceptance criteria\n- Other notes are unrelated\n", diff.replace("unrelated text", "x"))
+        self.assertEqual(ms[0].status, UNMAPPED)
+
+    def test_rank_takes_best_of_each_file_first(self):
+        diff = ("--- a/a.py\n+++ b/a.py\n@@ -0,0 +1,3 @@\n"
+                "+csv_export = 1\n+csv_export_rows = 2\n+csv_export_all = 3\n"
+                "--- a/b.py\n+++ b/b.py\n@@ -0,0 +1 @@\n+csv_export = 4\n")
+        ms = run("## Acceptance criteria\n- csv export\n", diff, max_evidence=2)
+        self.assertEqual(sorted(e.path for e in ms[0].code), ["a.py", "b.py"])
+
     def test_import_lines_are_not_evidence(self):
         ms = run("""
             ## Acceptance criteria

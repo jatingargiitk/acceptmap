@@ -30,9 +30,9 @@ $ acceptmap examples/issue-118.md --diff examples/pr-118.diff --no-details
 | ID | Status | Criterion | Code | Tests |
 |----|--------|-----------|------|-------|
 | AC-1 | ✅ MAPPED | After 5 failed login attempts from the same IP within 15 minutes, `POST /login` returns H… | `app/auth.py:14` `login`<br>`app/ratelimit.py:1`<br>`app/ratelimit.py:6` `FailedLoginLimiter` | `tests/test_auth.py:10` `test_login_returns_429_after_five_failed_attempts` |
-| AC-2 | ✅ MAPPED | The 429 response includes a `Retry-After` header with the seconds until the window resets | `app/auth.py:15` `login`<br>`app/auth.py:14` `login`<br>`app/ratelimit.py:9` `__init__` | `tests/test_auth.py:21` `test_429_response_has_retry_after_header` |
+| AC-2 | ✅ MAPPED | The 429 response includes a `Retry-After` header with the seconds until the window resets | `app/auth.py:15` `login`<br>`app/ratelimit.py:9` `__init__`<br>`app/auth.py:14` `login` | `tests/test_auth.py:21` `test_429_response_has_retry_after_header` |
 | AC-3 | ✅ MAPPED | A successful login resets the failed-attempt counter for that IP | `app/ratelimit.py:1`<br>`app/auth.py:14` `login`<br>`app/auth.py:20` `login` | `tests/test_auth.py:24` `test_successful_login_resets_failed_attempts`<br>`tests/test_auth.py:10` `test_login_returns_429_after_five_failed_attempts` |
-| AC-4 | 🟡 CODE-ONLY | The limit and window are configurable via `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_SECONDS` | `app/auth.py:8`<br>`app/settings.py:5`<br>`app/settings.py:6` | — |
+| AC-4 | 🟡 CODE-ONLY | The limit and window are configurable via `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_SECONDS` | `app/auth.py:8`<br>`app/settings.py:5`<br>`app/ratelimit.py:7` `__init__` | — |
 | AC-5 | ❌ UNMAPPED | Every lockout is written to the audit log with the IP and a timestamp | — | — |
 
 ### Unmapped criteria
@@ -86,12 +86,12 @@ $ acceptmap examples/csv-export.md --diff examples/csv-export.diff --no-details
 |----|--------|-----------|------|-------|
 | AC-1 | ✅ MAPPED | The export starts with a header row of column names | `src/export.ts:15` `exportCsv`<br>`src/export.ts:16` `exportCsv`<br>`src/export.ts:13` `exportCsv` | `src/export.test.ts:12` `first line is the header row` |
 | AC-2 | ✅ MAPPED | Values containing commas, quotes or newlines are escaped | `src/export.ts:7` `quoteCsvField`<br>`src/export.ts:4` `toCsvLine`<br>`src/export.ts:8` `quoteCsvField` | `src/export.test.ts:7` `wraps awkward fields in quotes` |
-| AC-3 | 🟡 CODE-ONLY | Given a table with no rows When the user exports it Then the download is an empty file | `src/export.ts:13` `exportCsv` | — |
+| AC-3 | 🟡 CODE-ONLY | Given a table with no rows When the user exports it Then the download is an empty file | `src/export.ts:13` `exportCsv`<br>`src/export.ts:4` `toCsvLine`<br>`src/export.ts:14` `exportCsv` | — |
 
 <sub>acceptmap 0.1.0 · heuristic term matching; review before relying on it.</sub>
 ```
 
-AC-2's test is found through the `// AC-2` comment above it. AC-3 is CODE-ONLY: `exportCsv` handles the empty table (the `rows.length === 0` check on the next line), but no test covers it.
+AC-2's test is found through the `// AC-2` comment above it. AC-3 is CODE-ONLY: `exportCsv` handles the empty table (the `rows.length === 0` check at `src/export.ts:14`), but no changed test covers it.
 
 ## GitHub Action
 

@@ -102,6 +102,7 @@ class _Unit:
     tags: Set[str]
     text: str  # lowercased text of all lines, for literal matching
     line_terms: List[Set[str]]
+    path_terms: Set[str] = field(default_factory=set)
 
 
 def _tags(text: str) -> Set[str]:
@@ -138,6 +139,7 @@ def _units(files: Sequence[FileDiff]) -> List[_Unit]:
         u.line_terms = [set(terms(ln.text)) for ln in u.lines]
         u.body_terms = set().union(*u.line_terms) - u.name_terms
         u.text = "\n".join(ln.text for ln in u.lines).lower()
+        u.path_terms = set(terms(u.lines[0].path.rsplit(".", 1)[0]))
         for ln in u.lines:
             u.tags |= _tags(ln.text)
     return units
@@ -197,9 +199,16 @@ def _score(m: Mapping, u: _Unit, min_terms: int, idf) -> Optional[Evidence]:
     cterms = m.terms
     name = _match(cterms, u.name_terms) if cterms else []
     body = [t for t in _match(cterms, u.body_terms) if t not in name] if cterms else []
-    matched = name + body
+    # The file path ("README", "settings") helps, but only next to a real match.
+    path = ([t for t in _match(cterms, u.path_terms) if t not in name and t not in body]
+            if (name or body) else [])
+    matched = name + body + path
     # In a test function the name says what is tested; the body only half counts.
-    score = sum(idf(t) for t in name) + (0.5 if u.name_terms else 1.0) * sum(idf(t) for t in body)
+    score = (sum(idf(t) for t in name)
+             + (0.5 if u.name_terms else 1.0) * sum(idf(t) for t in body)
+             + 0.5 * sum(idf(t) for t in path))
+    if all(ln.kind == "removed" for ln in u.lines):
+        score *= 0.7  # usually the old version of a changed line
     via = None
     if m.criterion.id in u.tags:
         via, score = "tag", score + 100.0
@@ -224,5 +233,12 @@ def _score(m: Mapping, u: _Unit, min_terms: int, idf) -> Optional[Evidence]:
 
 
 def _rank(evs: List[Evidence], limit: int) -> List[Evidence]:
+    """Best first, but the best location of each file before second picks from any file."""
     evs = sorted(evs, key=lambda e: (-e.score, e.path, e.line))
-    return evs[:limit] if limit > 0 else evs
+    seen: Set[str] = set()
+    first, rest = [], []
+    for e in evs:
+        (rest if e.path in seen else first).append(e)
+        seen.add(e.path)
+    ordered = first + rest
+    return ordered[:limit] if limit > 0 else ordered

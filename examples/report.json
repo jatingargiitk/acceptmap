@@ -130,19 +130,6 @@
           "score": 24.07
         },
         {
-          "path": "app/auth.py",
-          "line": 14,
-          "kind": "added",
-          "symbol": "login",
-          "text": "return Response(429, {\"error\": \"too many failed login attempts\"},",
-          "matched": [
-            "429",
-            "respons"
-          ],
-          "via": "terms",
-          "score": 13.36
-        },
-        {
           "path": "app/ratelimit.py",
           "line": 9,
           "kind": "added",
@@ -154,6 +141,19 @@
           ],
           "via": "terms",
           "score": 8.805
+        },
+        {
+          "path": "app/auth.py",
+          "line": 14,
+          "kind": "added",
+          "symbol": "login",
+          "text": "return Response(429, {\"error\": \"too many failed login attempts\"},",
+          "matched": [
+            "429",
+            "respons"
+          ],
+          "via": "terms",
+          "score": 13.36
         }
       ],
       "tests": [
@@ -326,18 +326,19 @@
           "score": 22.686
         },
         {
-          "path": "app/settings.py",
-          "line": 6,
+          "path": "app/ratelimit.py",
+          "line": 7,
           "kind": "added",
-          "symbol": null,
-          "text": "LOGIN_WINDOW_SECONDS = int(os.environ.get(\"LOGIN_WINDOW_SECONDS\", \"900\"))",
+          "symbol": "__init__",
+          "text": "def __init__(self, max_attempts, window_seconds, clock=time.monotonic):",
           "matched": [
             "window",
-            "login",
+            "max",
+            "attempt",
             "second"
           ],
-          "via": "literal",
-          "score": 21.816
+          "via": "terms",
+          "score": 18.481
         }
       ],
       "tests": []
