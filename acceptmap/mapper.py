@@ -3,9 +3,10 @@
 Matching is heuristic and deterministic:
 
 * a changed line is evidence for a criterion when it shares at least
-  ``min_terms`` distinct terms with it (terms of the enclosing function or test
-  name count too), or contains one of the criterion's backticked literals
-  verbatim, or carries the criterion's id as a tag (``AC-3``, ``test_ac3_...``);
+  ``min_terms`` distinct terms with it (terms of the enclosing test name and of
+  the file path count too), or contains one of the criterion's backticked
+  literals verbatim, or carries the criterion's id as a tag (``AC-3``,
+  ``test_ac3_...``) in a test name or a comment;
 * lines in test files become test evidence, everything else code evidence;
 * import/use lines are ignored (they name everything and prove nothing);
 * scores are IDF-weighted twice: terms on many changed lines count less, and
@@ -141,8 +142,24 @@ def _units(files: Sequence[FileDiff]) -> List[_Unit]:
         u.text = "\n".join(ln.text for ln in u.lines).lower()
         u.path_terms = set(terms(u.lines[0].path.rsplit(".", 1)[0]))
         for ln in u.lines:
-            u.tags |= _tags(ln.text)
+            if _tag_allowed(u, ln):
+                u.tags |= _tags(ln.text)
     return units
+
+
+_COMMENT_RE = re.compile(r"^\s*(?:#|//|/\*|\*|--|;)")
+_DOC_EXTS = (".md", ".markdown", ".rst", ".txt", ".adoc", ".html")
+
+
+def _tag_allowed(u: _Unit, ln: Line) -> bool:
+    """``AC-n`` tags count in added comment lines of code and tests (and in test names).
+
+    Docs, reports and string literals often mention criterion ids without
+    implementing them.
+    """
+    if ln.kind != "added" or ln.path.lower().endswith(_DOC_EXTS):
+        return False
+    return bool(_COMMENT_RE.match(ln.text))
 
 
 def map_criteria(
@@ -224,7 +241,7 @@ def _score(m: Mapping, u: _Unit, min_terms: int, idf) -> Optional[Evidence]:
     best_i, best_k = 0, -1
     for i, (ln, ts) in enumerate(zip(u.lines, u.line_terms)):
         k = len(_match(cterms, ts)) + (5 if any(l.lower() in ln.text.lower() for l in hits) else 0)
-        k += 50 if m.criterion.id in _tags(ln.text) else 0
+        k += 50 if _tag_allowed(u, ln) and m.criterion.id in _tags(ln.text) else 0
         if k > best_k:
             best_i, best_k = i, k
     ln = u.lines[best_i]

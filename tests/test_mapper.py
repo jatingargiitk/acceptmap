@@ -134,6 +134,22 @@ class MapperTest(unittest.TestCase):
         ms = run("## Acceptance criteria\n- csv export\n", diff, max_evidence=2)
         self.assertEqual(sorted(e.path for e in ms[0].code), ["a.py", "b.py"])
 
+    def test_tags_in_docs_code_and_removed_lines_do_not_count(self):
+        ms = run("## Acceptance criteria\n- AC-1: Zebra stripes\n", """\
+            --- a/README.md
+            +++ b/README.md
+            @@ -1 +1 @@
+            -old AC-1 note
+            +| AC-1 | MAPPED |
+            --- a/src/app.py
+            +++ b/src/app.py
+            @@ -1 +1,2 @@
+            -# AC-1 removed comment
+            +status = "AC-1"
+            +# AC-1: zebra handling lives here
+        """)
+        self.assertEqual([(e.path, e.line, e.via) for e in ms[0].code], [("src/app.py", 2, "tag")])
+
     def test_import_lines_are_not_evidence(self):
         ms = run("""
             ## Acceptance criteria

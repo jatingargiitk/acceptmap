@@ -72,7 +72,7 @@ exit 1
 
 ### Explicit tags and scenarios
 
-When wording alone is not enough, tag a test or a line with the criterion id: `AC-2` anywhere in a changed line or a test name (`test_ac2_...`, `// AC-2` above a test) always counts for AC-2. Criteria without an explicit `AC-n:` prefix are numbered in order of appearance, so prefer explicit ids if you tag.
+When wording alone is not enough, tag a test or a line with the criterion id: `AC-2` in a test name (`test_ac2_...`, `it("AC-2 ...")`) or in an added comment (`// AC-2` above a test, `# AC-2` next to code) always counts for AC-2. Ids that appear in strings, docs or removed lines are ignored. Criteria without an explicit `AC-n:` prefix are numbered in order of appearance, so prefer explicit ids if you tag.
 
 [`examples/csv-export.md`](examples/csv-export.md) uses `AC-1:`/`AC-2:` lines and a Given/When/Then scenario; [`examples/csv-export.diff`](examples/csv-export.diff) is the real diff of a TypeScript change:
 
@@ -169,7 +169,7 @@ examples:
 1. **Criteria.** If the document has an acceptance-criteria section (a Markdown heading or a bold/colon line such as `**Acceptance criteria:**` or `Done when:`), every list item, checkbox and `AC-n:` line in it is a criterion; nested bullets and indented continuation lines join their parent. Given/When/Then/And/But runs form one criterion each, anywhere. Without such a section, checkbox items anywhere are used. Code fences are skipped.
 2. **Diff.** Added lines (new-side line numbers) and removed lines (old-side line numbers) are kept with their enclosing function or test, taken from the hunk header and definitions in the hunk (Python, JS/TS incl. `it(...)`/`test(...)`, Go, Rust, Java/C#/Kotlin, Ruby). Test files are recognised by path (`tests/`, `test_*.py`, `*_test.go`, `*.test.ts`, `*.spec.*`, `*Test.java`, ...; add more with `--test-glob`). Import lines are ignored.
 3. **Terms.** Text and identifiers are split (`LOGIN_MAX_ATTEMPTS`, `loginMaxAttempts` and "max login attempts" give the same terms), lowercased, lightly stemmed, and stripped of English and code stopwords. Terms of 5+ characters also match longer terms they prefix (`config` / `configurable`).
-4. **Evidence.** A changed code line, or a changed test function (its name plus its changed lines), is evidence for a criterion when it shares at least `--min-terms` (default 2) terms with it, contains one of the criterion's backticked literals verbatim (`` `Retry-After` ``), or carries its `AC-n` tag. Scores weight rare terms higher, both across changed lines and across criteria, and each line or test only counts for the criteria it fits best (at least half the top score), so one shared word like "login" does not tie everything to everything.
+4. **Evidence.** A changed code line, or a changed test function (its name plus its changed lines), is evidence for a criterion when it shares at least `--min-terms` (default 2) terms with it, contains one of the criterion's backticked literals verbatim (`` `Retry-After` ``), or carries its `AC-n` tag in a test name or comment. Scores weight rare terms higher, both across changed lines and across criteria, and each line or test only counts for the criteria it fits best (at least half the top score), so one shared word like "login" does not tie everything to everything.
 5. **Report.** Up to `--max-evidence` (default 3) code and test locations per criterion, best first.
 
 ## Limitations
