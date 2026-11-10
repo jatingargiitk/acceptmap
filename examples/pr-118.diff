@@ -1,0 +1,106 @@
+diff --git a/app/auth.py b/app/auth.py
+index 16849d4..30d5083 100644
+--- a/app/auth.py
++++ b/app/auth.py
+@@ -1,11 +1,21 @@
+ """Login handling for the demo web app."""
+ 
++from app import settings
+ from app.http import Response
++from app.ratelimit import FailedLoginLimiter
+ from app.users import check_password
+ 
++limiter = FailedLoginLimiter(settings.LOGIN_MAX_ATTEMPTS, settings.LOGIN_WINDOW_SECONDS)
++
+ 
+ def login(request):
++    ip = request.remote_addr
++    if limiter.is_blocked(ip):
++        return Response(429, {"error": "too many failed login attempts"},
++                        headers={"Retry-After": str(limiter.retry_after(ip))})
+     user = check_password(request.form["email"], request.form["password"])
+     if user is None:
++        limiter.record_failure(ip)
+         return Response(401, {"error": "invalid credentials"})
++    limiter.reset(ip)
+     return Response(200, {"session": user.new_session()})
+diff --git a/app/ratelimit.py b/app/ratelimit.py
+new file mode 100644
+index 0000000..536d6be
+--- /dev/null
++++ b/app/ratelimit.py
+@@ -0,0 +1,30 @@
++"""Sliding-window counter of failed login attempts per client IP."""
++
++import time
++
++
++class FailedLoginLimiter:
++    def __init__(self, max_attempts, window_seconds, clock=time.monotonic):
++        self.max_attempts = max_attempts
++        self.window_seconds = window_seconds
++        self.clock = clock
++        self._failures = {}
++
++    def record_failure(self, ip):
++        now = self.clock()
++        recent = [t for t in self._failures.get(ip, []) if now - t < self.window_seconds]
++        recent.append(now)
++        self._failures[ip] = recent
++
++    def is_blocked(self, ip):
++        now = self.clock()
++        recent = [t for t in self._failures.get(ip, []) if now - t < self.window_seconds]
++        return len(recent) >= self.max_attempts
++
++    def retry_after(self, ip):
++        """Seconds until the oldest failure in the window expires."""
++        oldest = min(self._failures.get(ip, [self.clock()]))
++        return max(0, int(self.window_seconds - (self.clock() - oldest)) + 1)
++
++    def reset(self, ip):
++        self._failures.pop(ip, None)
+diff --git a/app/settings.py b/app/settings.py
+index 2c4d24f..84a3ce3 100644
+--- a/app/settings.py
++++ b/app/settings.py
+@@ -2,3 +2,5 @@ import os
+ 
+ SECRET_KEY = os.environ.get("SECRET_KEY", "dev")
+ SESSION_TTL_SECONDS = int(os.environ.get("SESSION_TTL_SECONDS", "3600"))
++LOGIN_MAX_ATTEMPTS = int(os.environ.get("LOGIN_MAX_ATTEMPTS", "5"))
++LOGIN_WINDOW_SECONDS = int(os.environ.get("LOGIN_WINDOW_SECONDS", "900"))
+diff --git a/tests/test_auth.py b/tests/test_auth.py
+index ecc497e..c1b3a72 100644
+--- a/tests/test_auth.py
++++ b/tests/test_auth.py
+@@ -1,7 +1,28 @@
+-from app.auth import login
++from app.auth import limiter, login
+ from tests.helpers import make_request
+ 
+ 
+ def test_login_ok():
+     resp = login(make_request("ana@example.com", "correct horse"))
+     assert resp.status == 200
++
++
++def test_login_returns_429_after_five_failed_attempts():
++    for _ in range(5):
++        login(make_request("ana@example.com", "wrong", ip="10.0.0.7"))
++    resp = login(make_request("ana@example.com", "correct horse", ip="10.0.0.7"))
++    assert resp.status == 429
++
++
++def test_429_response_has_retry_after_header():
++    for _ in range(5):
++        login(make_request("bo@example.com", "wrong", ip="10.0.0.8"))
++    resp = login(make_request("bo@example.com", "wrong", ip="10.0.0.8"))
++    assert int(resp.headers["Retry-After"]) > 0
++
++
++def test_successful_login_resets_failed_attempts():
++    for _ in range(4):
++        login(make_request("cy@example.com", "wrong", ip="10.0.0.9"))
++    login(make_request("cy@example.com", "correct horse", ip="10.0.0.9"))
++    assert not limiter.is_blocked("10.0.0.9")
