@@ -23,6 +23,10 @@ examples:
 """
 
 
+def _n(count: int) -> str:
+    return "%d %s" % (count, "criterion" if count == 1 else "criteria")
+
+
 def _read(path: str) -> str:
     if path == "-":
         return sys.stdin.read()
@@ -119,10 +123,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     fail_on = "unmapped" if args.fail_on_unmapped and not args.fail_on else args.fail_on
     s = summary(mappings)
     if fail_on == "unmapped" and s[UNMAPPED]:
-        print("acceptmap: %d criteria unmapped" % s[UNMAPPED], file=sys.stderr)
+        print("acceptmap: %s unmapped" % _n(s[UNMAPPED]), file=sys.stderr)
         return 1
     if fail_on == "untested" and (s[UNMAPPED] + s[CODE_ONLY]):
-        print("acceptmap: %d criteria without test evidence" % (s[UNMAPPED] + s[CODE_ONLY]),
+        print("acceptmap: %s without test evidence" % _n(s[UNMAPPED] + s[CODE_ONLY]),
               file=sys.stderr)
         return 1
     return 0

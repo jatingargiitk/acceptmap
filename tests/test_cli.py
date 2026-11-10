@@ -78,7 +78,8 @@ class CliTest(unittest.TestCase):
             self.assertEqual(json.load(fh)["summary"]["total"], 5)
 
     def test_fail_on(self):
-        self.assertEqual(cli(ISSUE, "--diff", DIFF, "--fail-on-unmapped")[0], 1)
+        code, _, err = cli(ISSUE, "--diff", DIFF, "--fail-on-unmapped")
+        self.assertEqual((code, err), (1, "acceptmap: 1 criterion unmapped\n"))
         self.assertEqual(cli(ISSUE, "--diff", DIFF, "--fail-on", "unmapped")[0], 1)
         code, _, err = cli(ISSUE, "--diff", DIFF, "--fail-on", "untested")
         self.assertEqual(code, 1)
