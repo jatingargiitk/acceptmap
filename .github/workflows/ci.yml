@@ -45,5 +45,8 @@ jobs:
           spec: examples/issue-118.md
           base: HEAD~1
       - name: Action on this pull request's description
+        id: pr
         if: github.event_name == 'pull_request'
         uses: ./
+      - if: github.event_name == 'pull_request'
+        run: cat "${{ steps.pr.outputs.report }}"
