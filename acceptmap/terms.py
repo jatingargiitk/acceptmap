@@ -58,7 +58,7 @@ def stem(word: str) -> str:
                 continue
             word = word[: -len(suf)]
             break
-    if word.endswith("ie") and len(word) > 4:
+    if word.endswith("ie") and len(word) >= 4:
         word = word[:-2] + "y"
     if word.endswith("e") and len(word) > 3:
         word = word[:-1]

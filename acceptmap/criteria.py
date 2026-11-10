@@ -110,14 +110,15 @@ def parse_criteria(markdown: str) -> List[Criterion]:
         g = GWT_RE.match(raw)
         if g and not CHECK_RE.match(stripped.lstrip("-*+ ")):
             kw = g.group(1).lower()
+            step = _clean("%s %s" % (g.group(1), g.group(2)))
             if kw == "given" or (scenario is None and kw in ("when", "then")):
-                scenario = Criterion("", _clean(stripped.lstrip("-*+ ")), lineno, "scenario",
+                scenario = Criterion("", step, lineno, "scenario",
                                      in_section=in_section)
                 found.append(scenario)
                 current = None
                 continue
             if scenario is not None:
-                scenario.text += " " + _clean(stripped.lstrip("-*+ "))
+                scenario.text += " " + step
                 continue
             # A stray "And ..." line with no scenario: treat as ordinary text below.
 

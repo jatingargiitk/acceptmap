@@ -1,0 +1,366 @@
+{
+  "tool": "acceptmap",
+  "version": "0.1.0",
+  "spec": "examples/issue-118.md",
+  "summary": {
+    "MAPPED": 3,
+    "CODE-ONLY": 1,
+    "TEST-ONLY": 0,
+    "UNMAPPED": 1,
+    "total": 5
+  },
+  "criteria": [
+    {
+      "id": "AC-1",
+      "text": "After 5 failed login attempts from the same IP within 15 minutes, `POST /login` returns HTTP 429",
+      "line": 7,
+      "kind": "checkbox",
+      "checked": false,
+      "explicit_id": false,
+      "status": "MAPPED",
+      "terms": [
+        "fail",
+        "login",
+        "attempt",
+        "ip",
+        "15",
+        "minut",
+        "post",
+        "http",
+        "429"
+      ],
+      "literals": [],
+      "code": [
+        {
+          "path": "app/auth.py",
+          "line": 14,
+          "kind": "added",
+          "symbol": "login",
+          "text": "return Response(429, {\"error\": \"too many failed login attempts\"},",
+          "matched": [
+            "fail",
+            "login",
+            "attempt",
+            "429"
+          ],
+          "via": "terms",
+          "score": 16.995
+        },
+        {
+          "path": "app/ratelimit.py",
+          "line": 1,
+          "kind": "added",
+          "symbol": null,
+          "text": "\"\"\"Sliding-window counter of failed login attempts per client IP.\"\"\"",
+          "matched": [
+            "fail",
+            "login",
+            "attempt",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 13.981
+        },
+        {
+          "path": "app/ratelimit.py",
+          "line": 6,
+          "kind": "added",
+          "symbol": "FailedLoginLimiter",
+          "text": "class FailedLoginLimiter:",
+          "matched": [
+            "fail",
+            "login"
+          ],
+          "via": "terms",
+          "score": 7.928
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_auth.py",
+          "line": 10,
+          "kind": "added",
+          "symbol": "test_login_returns_429_after_five_failed_attempts",
+          "text": "def test_login_returns_429_after_five_failed_attempts():",
+          "matched": [
+            "fail",
+            "login",
+            "attempt",
+            "429",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 18.232
+        }
+      ]
+    },
+    {
+      "id": "AC-2",
+      "text": "The 429 response includes a `Retry-After` header with the seconds until the window resets",
+      "line": 8,
+      "kind": "checkbox",
+      "checked": false,
+      "explicit_id": false,
+      "status": "MAPPED",
+      "terms": [
+        "429",
+        "respons",
+        "includ",
+        "retry",
+        "head",
+        "second",
+        "window",
+        "reset"
+      ],
+      "literals": [
+        "Retry-After"
+      ],
+      "code": [
+        {
+          "path": "app/auth.py",
+          "line": 15,
+          "kind": "added",
+          "symbol": "login",
+          "text": "headers={\"Retry-After\": str(limiter.retry_after(ip))})",
+          "matched": [
+            "retry",
+            "head"
+          ],
+          "via": "literal",
+          "score": 24.07
+        },
+        {
+          "path": "app/auth.py",
+          "line": 14,
+          "kind": "added",
+          "symbol": "login",
+          "text": "return Response(429, {\"error\": \"too many failed login attempts\"},",
+          "matched": [
+            "429",
+            "respons"
+          ],
+          "via": "terms",
+          "score": 13.36
+        },
+        {
+          "path": "app/ratelimit.py",
+          "line": 9,
+          "kind": "added",
+          "symbol": "__init__",
+          "text": "self.window_seconds = window_seconds",
+          "matched": [
+            "second",
+            "window"
+          ],
+          "via": "terms",
+          "score": 8.805
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_auth.py",
+          "line": 21,
+          "kind": "added",
+          "symbol": "test_429_response_has_retry_after_header",
+          "text": "assert int(resp.headers[\"Retry-After\"]) > 0",
+          "matched": [
+            "429",
+            "respons",
+            "retry",
+            "head"
+          ],
+          "via": "literal",
+          "score": 37.43
+        }
+      ]
+    },
+    {
+      "id": "AC-3",
+      "text": "A successful login resets the failed-attempt counter for that IP",
+      "line": 9,
+      "kind": "checkbox",
+      "checked": false,
+      "explicit_id": false,
+      "status": "MAPPED",
+      "terms": [
+        "successful",
+        "login",
+        "reset",
+        "fail",
+        "attempt",
+        "count",
+        "ip"
+      ],
+      "literals": [],
+      "code": [
+        {
+          "path": "app/ratelimit.py",
+          "line": 1,
+          "kind": "added",
+          "symbol": null,
+          "text": "\"\"\"Sliding-window counter of failed login attempts per client IP.\"\"\"",
+          "matched": [
+            "login",
+            "fail",
+            "attempt",
+            "count",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 22.705
+        },
+        {
+          "path": "app/auth.py",
+          "line": 14,
+          "kind": "added",
+          "symbol": "login",
+          "text": "return Response(429, {\"error\": \"too many failed login attempts\"},",
+          "matched": [
+            "login",
+            "fail",
+            "attempt"
+          ],
+          "via": "terms",
+          "score": 11.508
+        },
+        {
+          "path": "app/auth.py",
+          "line": 20,
+          "kind": "added",
+          "symbol": "login",
+          "text": "limiter.reset(ip)",
+          "matched": [
+            "reset",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 8.337
+        }
+      ],
+      "tests": [
+        {
+          "path": "tests/test_auth.py",
+          "line": 24,
+          "kind": "added",
+          "symbol": "test_successful_login_resets_failed_attempts",
+          "text": "def test_successful_login_resets_failed_attempts():",
+          "matched": [
+            "successful",
+            "login",
+            "reset",
+            "fail",
+            "attempt",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 27.333
+        },
+        {
+          "path": "tests/test_auth.py",
+          "line": 10,
+          "kind": "added",
+          "symbol": "test_login_returns_429_after_five_failed_attempts",
+          "text": "def test_login_returns_429_after_five_failed_attempts():",
+          "matched": [
+            "login",
+            "fail",
+            "attempt",
+            "ip"
+          ],
+          "via": "terms",
+          "score": 12.745
+        }
+      ]
+    },
+    {
+      "id": "AC-4",
+      "text": "The limit and window are configurable via `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_SECONDS`",
+      "line": 10,
+      "kind": "checkbox",
+      "checked": false,
+      "explicit_id": false,
+      "status": "CODE-ONLY",
+      "terms": [
+        "limit",
+        "window",
+        "configur",
+        "login",
+        "max",
+        "attempt",
+        "second"
+      ],
+      "literals": [
+        "LOGIN_MAX_ATTEMPTS",
+        "LOGIN_WINDOW_SECONDS"
+      ],
+      "code": [
+        {
+          "path": "app/auth.py",
+          "line": 8,
+          "kind": "added",
+          "symbol": null,
+          "text": "limiter = FailedLoginLimiter(settings.LOGIN_MAX_ATTEMPTS, settings.LOGIN_WINDOW_SECONDS)",
+          "matched": [
+            "limit",
+            "window",
+            "login",
+            "max",
+            "attempt",
+            "second"
+          ],
+          "via": "literal",
+          "score": 47.306
+        },
+        {
+          "path": "app/settings.py",
+          "line": 5,
+          "kind": "added",
+          "symbol": null,
+          "text": "LOGIN_MAX_ATTEMPTS = int(os.environ.get(\"LOGIN_MAX_ATTEMPTS\", \"5\"))",
+          "matched": [
+            "login",
+            "max",
+            "attempt"
+          ],
+          "via": "literal",
+          "score": 22.686
+        },
+        {
+          "path": "app/settings.py",
+          "line": 6,
+          "kind": "added",
+          "symbol": null,
+          "text": "LOGIN_WINDOW_SECONDS = int(os.environ.get(\"LOGIN_WINDOW_SECONDS\", \"900\"))",
+          "matched": [
+            "window",
+            "login",
+            "second"
+          ],
+          "via": "literal",
+          "score": 21.816
+        }
+      ],
+      "tests": []
+    },
+    {
+      "id": "AC-5",
+      "text": "Every lockout is written to the audit log with the IP and a timestamp",
+      "line": 11,
+      "kind": "checkbox",
+      "checked": false,
+      "explicit_id": false,
+      "status": "UNMAPPED",
+      "terms": [
+        "lockout",
+        "written",
+        "audit",
+        "log",
+        "ip",
+        "timestamp"
+      ],
+      "literals": [],
+      "code": [],
+      "tests": []
+    }
+  ]
+}
