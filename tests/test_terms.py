@@ -1,6 +1,6 @@
 import unittest
 
-from acceptmap.terms import literals, same_term, stem, terms
+from acceptmap.terms import literals, same_term, stem, term_words, terms
 
 
 class TermsTest(unittest.TestCase):
@@ -36,6 +36,10 @@ class TermsTest(unittest.TestCase):
         self.assertTrue(same_term("token", "tokeniz"))
         self.assertFalse(same_term("log", "login"))  # shorter side under 5 chars
         self.assertFalse(same_term("login", "logout"))
+
+    def test_term_words_keep_original_word_for_display(self):
+        self.assertEqual(term_words("Empty tables export files"),
+                         {"empty": "empty", "tabl": "tables", "export": "export", "fil": "files"})
 
     def test_literals(self):
         self.assertEqual(literals("set `Retry-After` and `LOGIN_MAX_ATTEMPTS`, not `x`"),

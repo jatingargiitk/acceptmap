@@ -73,7 +73,7 @@ def to_markdown(mappings: Sequence[Mapping], title: Optional[str] = None,
         lines.append("")
         for m in unmapped:
             why = ("no matchable terms" if not m.terms
-                   else "no changed line matched (terms: %s)" % ", ".join(m.terms))
+                   else "no changed line matched (terms: %s)" % ", ".join(m.word(t) for t in m.terms))
             lines.append("- **%s** %s — %s" % (m.criterion.id, _cell(m.criterion.text, 200), why))
     if details:
         lines.append("")
@@ -88,7 +88,7 @@ def to_markdown(mappings: Sequence[Mapping], title: Optional[str] = None,
                 for e in evs:
                     why = ("tag %s" % m.criterion.id if e.via == "tag"
                            else "literal" if e.via == "literal" and not e.matched
-                           else ", ".join(e.matched))
+                           else ", ".join(m.word(t) for t in e.matched))
                     if e.via == "literal" and e.matched:
                         why = "literal; " + why
                     lines.append("- %s %s — `%s` (%s)" % (

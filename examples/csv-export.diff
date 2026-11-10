@@ -1,0 +1,43 @@
+diff --git a/src/export.test.ts b/src/export.test.ts
+index 189af68..3b355de 100644
+--- a/src/export.test.ts
++++ b/src/export.test.ts
+@@ -1,5 +1,14 @@
+-import { toCsvLine } from "./export";
++import { exportCsv, quoteCsvField, toCsvLine } from "./export";
+ 
+ test("joins values with commas", () => {
+   expect(toCsvLine({ a: 1, b: 2 })).toBe("1,2");
+ });
++
++// AC-2
++test("wraps awkward fields in quotes", () => {
++  expect(quoteCsvField('say "hi", ok')).toBe('"say ""hi"", ok"');
++});
++
++test("first line is the header row", () => {
++  expect(exportCsv([{ id: 1, name: "a" }]).split("\n")[0]).toBe("id,name");
++});
+diff --git a/src/export.ts b/src/export.ts
+index bd8321d..b15b904 100644
+--- a/src/export.ts
++++ b/src/export.ts
+@@ -1,5 +1,17 @@
+ import { Row } from "./db";
+ 
+ export function toCsvLine(row: Row): string {
+-  return Object.values(row).map(String).join(",");
++  return Object.values(row).map(quoteCsvField).join(",");
++}
++
++// Fields with commas, quotes or newlines are wrapped in double quotes.
++export function quoteCsvField(value: unknown): string {
++  const s = String(value);
++  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
++}
++
++export function exportCsv(rows: Row[]): string {
++  if (rows.length === 0) return "";
++  const header = Object.keys(rows[0]).join(",");
++  return [header, ...rows.map(toCsvLine)].join("\n");
+ }

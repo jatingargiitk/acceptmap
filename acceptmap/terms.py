@@ -7,7 +7,7 @@ Both sides go through the same pipeline so that ``LOGIN_MAX_ATTEMPTS``,
 from __future__ import annotations
 
 import re
-from typing import Iterable, List, Set
+from typing import Dict, Iterable, List, Set
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
 _CAMEL_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+")
@@ -31,7 +31,7 @@ STOPWORDS: Set[str] = set(
     ensure ensures correctly correct properly proper expected expect expects behavior
     behaviour case cases work works working new existing etc eg ie e g
     def class return returns returned self cls this none null nil true false const var
-    function func fn import from export async await assert assertequal asserttrue
+    function func fn async await assert assertequal asserttrue
     assertfalse equal equals tobe toequal test tests testing spec it describe pass
     """.split()
 )
@@ -76,8 +76,12 @@ def split_words(text: str) -> List[str]:
 
 def terms(text: str) -> List[str]:
     """Ordered, de-duplicated, stemmed, stopword-free terms of ``text``."""
-    seen: Set[str] = set()
-    out: List[str] = []
+    return list(term_words(text))
+
+
+def term_words(text: str) -> Dict[str, str]:
+    """Like :func:`terms`, but maps each term to the first word it came from (for display)."""
+    out: Dict[str, str] = {}
     for w in split_words(text):
         if w in STOPWORDS:
             continue
@@ -87,10 +91,9 @@ def terms(text: str) -> List[str]:
         elif len(w) < 3 and w not in SHORT_WORDS:
             continue
         s = stem(w) if len(w) > 2 else w
-        if s in STOPWORDS or s in seen:
+        if s in STOPWORDS or s in out:
             continue
-        seen.add(s)
-        out.append(s)
+        out[s] = w
     return out
 
 

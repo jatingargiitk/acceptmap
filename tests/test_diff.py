@@ -100,6 +100,25 @@ class DiffTest(unittest.TestCase):
         names = {l.symbol for l in tests.lines if l.kind == "added" and l.text.strip()}
         self.assertIn("test_successful_login_resets_failed_attempts", names)
 
+    def test_comments_and_decorators_attach_to_next_definition(self):
+        diff = (
+            "--- a/tests/test_x.py\n+++ b/tests/test_x.py\n@@ -1,2 +1,8 @@\n"
+            " def test_old():\n"
+            "     pass\n"
+            "+\n"
+            "+# AC-4\n"
+            "+@pytest.mark.slow\n"
+            "+def test_new():\n"
+            "+    pass\n"
+            "+# trailing comment\n"
+        )
+        lines = parse_diff(diff)[0].lines
+        self.assertEqual([(l.text, l.symbol) for l in lines[1:]], [
+            ("# AC-4", "test_new"), ("@pytest.mark.slow", "test_new"),
+            ("def test_new():", "test_new"), ("    pass", "test_new"),
+            ("# trailing comment", "test_new"),
+        ])
+
     def test_is_test_path(self):
         for p in ("tests/test_x.py", "pkg/sub/tests/helpers.py", "test_x.py", "a/b_test.go",
                   "src/x.test.ts", "web/__tests__/a.js", "spec/models/user_spec.rb",

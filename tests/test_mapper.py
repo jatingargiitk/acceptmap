@@ -78,6 +78,19 @@ class MapperTest(unittest.TestCase):
         self.assertEqual(ms["AC-3"].tests[0].via, "tag")
         self.assertEqual(ms["AC-4"].status, UNMAPPED)
 
+    def test_csv_example_tag_comment_and_scenario(self):
+        with open(os.path.join(EX, "csv-export.md")) as fh:
+            criteria = parse_criteria(fh.read())
+        with open(os.path.join(EX, "csv-export.diff")) as fh:
+            files = parse_diff(fh.read())
+        ms = by_id(map_criteria(criteria, files))
+        self.assertEqual([m.criterion.kind for m in ms.values()], ["list", "list", "scenario"])
+        self.assertEqual({k: m.status for k, m in ms.items()},
+                         {"AC-1": MAPPED, "AC-2": MAPPED, "AC-3": CODE_ONLY})
+        tagged = ms["AC-2"].tests[0]
+        self.assertEqual((tagged.via, tagged.symbol, tagged.line),
+                         ("tag", "wraps awkward fields in quotes", 7))
+
     def test_import_lines_are_not_evidence(self):
         ms = run("""
             ## Acceptance criteria

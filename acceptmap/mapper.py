@@ -25,7 +25,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from .criteria import Criterion
 from .diff import FileDiff, Line
-from .terms import literals, same_term, terms
+from .terms import literals, same_term, term_words, terms
 
 MAPPED = "MAPPED"
 CODE_ONLY = "CODE-ONLY"
@@ -66,6 +66,10 @@ class Mapping:
     literals: List[str]
     code: List[Evidence] = field(default_factory=list)
     tests: List[Evidence] = field(default_factory=list)
+    words: Dict[str, str] = field(default_factory=dict)  # term -> word in the criterion
+
+    def word(self, term: str) -> str:
+        return self.words.get(term, term)
 
     @property
     def status(self) -> str:
@@ -168,7 +172,8 @@ def map_criteria(
         crit_w = math.log((nc + 1) / (cdf.get(t, 0) + 1)) + 1.0
         return line_w * crit_w
 
-    results = [Mapping(c, ts, literals(c.text)) for c, ts in zip(criteria, cterm_lists)]
+    results = [Mapping(c, ts, literals(c.text), words=term_words(c.text))
+               for c, ts in zip(criteria, cterm_lists)]
     for u in units:
         found: List[Tuple[Mapping, Evidence]] = []
         for m in results:

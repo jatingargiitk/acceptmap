@@ -196,4 +196,28 @@ def parse_diff(text: str, test_globs: Sequence[str] = ()) -> List[FileDiff]:
         f.is_test = is_test_path(f.path, test_globs)
         for ln in f.lines:
             ln.path = f.path
+        _attach_leading_comments(f)
     return files
+
+
+_LEADING_RE = re.compile(r"^\s*(?:#|//|/\*|\*|@|--|;)")
+
+
+def _attach_leading_comments(f: FileDiff) -> None:
+    """Comments and decorators right above a definition belong to it.
+
+    So ``// AC-2`` or ``@pytest.mark.ac2`` above a test counts for that test.
+    """
+    nxt: Optional[Tuple[str, int]] = None  # (name, line number of the next line)
+    for ln in reversed(f.lines):
+        if ln.kind != "added":
+            nxt = None
+            continue
+        name = definition_name(ln.text)
+        if name:
+            nxt = (name, ln.line)
+        elif nxt is not None and ln.line == nxt[1] - 1 and _LEADING_RE.match(ln.text):
+            ln.symbol = nxt[0]
+            nxt = (nxt[0], ln.line)
+        else:
+            nxt = None
