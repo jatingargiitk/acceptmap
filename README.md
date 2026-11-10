@@ -95,9 +95,10 @@ AC-2's test is found through the `// AC-2` comment above it. AC-3 is CODE-ONLY: 
 
 ## GitHub Action
 
-The repo is also a composite action. It reads the criteria from the pull request description (or a `spec` file), diffs the PR against its base, and writes the report to the job summary.
+The repo is also a composite action. It reads the criteria from the pull request description (or a `spec` file), diffs the PR against its base, and writes the report to the job summary. [`examples/acceptmap-workflow.yml`](examples/acceptmap-workflow.yml) is a ready-to-copy workflow:
 
 ```yaml
+# Copy to .github/workflows/acceptmap.yml in your repo.
 name: acceptance criteria
 on: pull_request
 jobs:
